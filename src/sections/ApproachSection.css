@@ -1,0 +1,35 @@
+.approach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.approach-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: rgba(205, 255, 0, 0.04);
+  border: 1px solid rgba(205, 255, 0, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.approach-card:hover {
+  border-color: rgba(205, 255, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.approach-icon {
+  color: #CDFF00;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.approach-card p {
+  color: #ccc;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}

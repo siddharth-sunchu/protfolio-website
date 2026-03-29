@@ -10,5 +10,5 @@ export { default as RecognitionSection } from './RecognitionSection/RecognitionS
 export { default as IntroductionSection } from './IntroductionSection/IntroductionSection';
 export { default as AnimatedSection } from './AnimatedSection/AnimatedSection';        
 export { default as Navbar } from './Navbar/Navbar';
-// export { default as Component3 } from './Component3';
-// Add more components as needed
+export { default as ConsultationSection } from './ConsultationSection/ConsultationSection';
+export { default as ThankYou } from './ThankYou/ThankYou';

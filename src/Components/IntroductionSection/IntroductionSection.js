@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Linkedin, Book, Database, FileText, Award } from 'lucide-react';
+import { Linkedin, Book, Database, FileText, Award, Calendar } from 'lucide-react';
 import photo from './shalmali_photo.jpg'; // Make sure to have the correct path to your photo
 import './IntroductionSection.css';
 
@@ -69,6 +69,12 @@ const IntroductionSection = () => {
             <p className="intro-description">
               Dedicated to fostering innovation and mentoring the next generation of leaders, I am committed to leveraging the power of data to create impactful solutions that shape the future of industries worldwide.
             </p>
+            <div className="consultation-cta-inline">
+              <a href="#consultation" className="consultation-cta-btn">
+                <Calendar size={20} />
+                <span>Book EB-1A Consultation — $50</span>
+              </a>
+            </div>
           </div>
           <div className="image-container">
             <img src={photo} alt="Shalmali Patil" className="profile-image" />

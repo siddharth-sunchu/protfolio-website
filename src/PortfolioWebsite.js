@@ -1,142 +1,124 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Menu,
-  X,
-  Mail,
-  ExternalLink,
-  Award,
-  Briefcase,
-  Book,
-  Users,
-  Globe,
-  MessageCircle,
-  Star
-} from 'lucide-react';
-import {
-  ExpertiseSection,
-  Header,
-  MembershipSection,
-  JudgeAndPanelSection,
-  PublicationsSection,
-  ProfessionalExperienceSection,
-  ContactSection,
-  AwardsSection,
-  RecognitionSection,
-  IntroductionSection,
-  Navbar,
-  AnimatedSection
-} from './Components';
-
+import React, { useState, useEffect } from 'react';
+import { Menu, X, ArrowRight, ArrowUp } from 'lucide-react';
+import { ConsultationSection } from './Components';
+import HeroSection from './sections/HeroSection';
+import ComparisonSection from './sections/ComparisonSection';
+import AboutSection from './sections/AboutSection';
+import ProcessSection from './sections/ProcessSection';
+import ApproachSection from './sections/ApproachSection';
+import WhoSection from './sections/WhoSection';
+import HowSection from './sections/HowSection';
+import FAQSection from './sections/FAQSection';
+import NoteSection from './sections/NoteSection';
+import FooterCTA from './sections/FooterCTA';
 import './PortfolioWebsite.css';
 
+const NAV_LINKS = [
+  { id: 'about', label: 'About' },
+  { id: 'approach', label: 'Approach' },
+  { id: 'who', label: 'Who It\'s For' },
+  { id: 'how', label: 'How I Help' },
+  { id: 'faq', label: 'FAQ' },
+];
 
 const PortfolioWebsite = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('intro');
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const winScroll = document.documentElement.scrollTop;
-      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const scrolled = (winScroll / height) * 100;
-      setScrollProgress(scrolled);
-
-      const sections = document.querySelectorAll('section');
-      sections.forEach((section) => {
-        const rect = section.getBoundingClientRect();
-        if (rect.top <= 150 && rect.bottom >= 150) {
-          setActiveSection(section.id);
-        }
-      });
+    const onScroll = () => {
+      setScrolled(window.scrollY > 50);
+      setShowScrollTop(window.scrollY > 600);
     };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const sections = [
-    { id: 'intro', title: 'Introduction', icon: <Users size={20} /> },
-    { id: 'expertise', title: 'Expert Insights', icon: <Book size={20} /> },
-    { id: 'membership', title: 'Professional Membership', icon: <Award size={20} /> },
-    { id: 'recognitions', title: 'Recognitions', icon: <Star size={20} /> },
-    { id: 'panels', title: 'Judging & Panels', icon: <Users size={20} /> },
-    { id: 'awards', title: 'Awards', icon: <Award size={20} /> },
-    { id: 'professional', title: 'Professional Experience', icon: <Briefcase size={20} /> },
-    { id: 'publications', title: 'Publications', icon: <Book size={20} /> },
-    { id: 'connect', title: "Let's Connect", icon: <MessageCircle size={20} /> }
-  ];
-
   return (
-    <>
-      <Header />
-      <div className="portfolio-container">
-      <div
-          className="fixed top-0 left-0 w-full h-1 bg-[#CDFF00] z-50 transform-origin-left"
-          style={{ transform: `scaleX(${scrollProgress / 100})` }}
-        />
-
-        <Navbar activeSection={activeSection} sections={sections} />
-
-        <div className="main-content">
-          <nav className="mobile-nav">
-            <div className="mobile-nav-header">
-              <span className="portfolio-title">Portfolio</span>
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="menu-button"
-              >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-            {isMenuOpen && (
-              <div className="mobile-menu">
-                {sections.map((section) => (
-                  <a
-                    key={section.id}
-                    href={`#${section.id}`}
-                    className="mobile-nav-item"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {section.title}
-                  </a>
-                ))}
-              </div>
-            )}
+    <div className="site-wrapper">
+      {/* Header */}
+      <header className={`site-header ${scrolled ? 'header-scrolled' : ''}`}>
+        <div className="header-inner">
+          <a href="#hero" className="site-logo">
+            <span className="logo-accent">Shalmali</span> Patil
+          </a>
+          <nav className="desktop-nav">
+            {NAV_LINKS.map(link => (
+              <a key={link.id} href={`#${link.id}`} className="nav-link">{link.label}</a>
+            ))}
           </nav>
-
-          <main className="content">
-            <AnimatedSection id="intro" className="bg-black">
-              <IntroductionSection />
-            </AnimatedSection>
-            <AnimatedSection id="expertise" className="bg-black">
-              <ExpertiseSection />
-            </AnimatedSection>
-            <AnimatedSection id="membership" className="bg-black">
-              <MembershipSection />
-            </AnimatedSection>
-            <AnimatedSection id="recognitions" className="bg-black">
-              <RecognitionSection />
-            </AnimatedSection>
-            <AnimatedSection id="panels" className="bg-black">
-              <JudgeAndPanelSection />
-            </AnimatedSection>
-            <AnimatedSection id="awards" className="bg-black">
-              <AwardsSection />
-            </AnimatedSection>
-            <AnimatedSection id="professional" className="bg-black">
-              <ProfessionalExperienceSection />
-            </AnimatedSection>
-            <AnimatedSection id="publications" className="bg-black">
-              <PublicationsSection />
-            </AnimatedSection>
-            <AnimatedSection id="connect" className="bg-black">
-              <ContactSection />
-            </AnimatedSection>
-          </main>
+          <a href="#booking" className="header-cta">Book Consultation</a>
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
-      </div>
-    </>
+        {isMenuOpen && (
+          <nav className="mobile-nav">
+            {NAV_LINKS.map(link => (
+              <a key={link.id} href={`#${link.id}`} className="mobile-nav-link"
+                onClick={() => setIsMenuOpen(false)}>{link.label}</a>
+            ))}
+            <a href="#booking" className="mobile-nav-link mobile-nav-cta"
+              onClick={() => setIsMenuOpen(false)}>Book Consultation →</a>
+          </nav>
+        )}
+      </header>
+
+      <main>
+        <HeroSection />
+        <ComparisonSection />
+        <AboutSection />
+        <ProcessSection />
+        <ApproachSection />
+        <WhoSection />
+        <HowSection />
+        <section id="consultation" className="section-dark">
+          <ConsultationSection />
+        </section>
+        <FAQSection />
+        <NoteSection />
+        <FooterCTA />
+      </main>
+
+      {/* Floating CTA */}
+      <a href="#booking" className={`floating-cta ${scrolled ? 'visible' : ''}`}>
+        <ArrowRight size={16} />
+        <span>Book Now — $50</span>
+      </a>
+
+      {/* Scroll to top */}
+      <button
+        className={`scroll-top ${showScrollTop ? 'visible' : ''}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Scroll to top"
+      >
+        <ArrowUp size={18} />
+      </button>
+
+      {/* Footer */}
+      <footer className="site-footer">
+        <div className="footer-inner">
+          <div className="footer-left">
+            <p className="footer-brand"><span className="logo-accent">Shalmali</span> Patil</p>
+            <p className="footer-email">
+              <a href="mailto:shalupatil15@gmail.com">shalupatil15@gmail.com</a>
+            </p>
+          </div>
+          <div className="footer-right">
+            <p className="footer-disclaimer">
+              Disclaimer: This is strategic consultation, not legal advice.
+              For legal filings, please work with a qualified immigration attorney.
+            </p>
+            <p className="footer-copy">&copy; {new Date().getFullYear()} Shalmali Patil. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 };
 

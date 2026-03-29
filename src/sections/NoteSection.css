@@ -1,0 +1,39 @@
+.note-section {
+  background: #050505;
+}
+
+.note-card {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, rgba(205, 255, 0, 0.05) 0%, transparent 70%);
+  border: 1px solid rgba(205, 255, 0, 0.12);
+  border-radius: 20px;
+}
+
+.note-icon {
+  color: #CDFF00;
+  margin-bottom: 1.25rem;
+}
+
+.note-card h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+.note-card p {
+  color: #aaa;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 550px;
+  margin: 0 auto 1rem;
+}
+
+.note-signature {
+  display: block;
+  color: #CDFF00;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-style: italic;
+  margin-top: 1.5rem;
+}

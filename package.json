@@ -5,13 +5,16 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@paypal/react-paypal-js": "^9.1.0",
     "cra-template": "1.2.0",
     "lucide-react": "^0.469.0",
     "react": "^19.0.0",
+    "react-calendly": "^4.4.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^6.30.3",
     "react-scripts": "5.0.1"
   },
-  "homepage": "https://github.com/siddharth-sunchu/protfolio-website",
+  "homepage": ".",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

@@ -27,9 +27,10 @@ const Header = () => {
           </span>
           <button
             type="button"
+            onClick={() => document.getElementById('consultation')?.scrollIntoView({ behavior: 'smooth' })}
             className="border border-[#CDFF00] text-[#CDFF00] py-2 px-6 hover:bg-[#CDFF00] hover:text-black text-sm font-semibold rounded-lg transition-all duration-300"
           >
-            Let's Connect
+            Book Consultation
           </button>
         </div>
 
