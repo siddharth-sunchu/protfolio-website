@@ -17,7 +17,7 @@ import {
 import './ConsultationSection.css';
 
 const CALENDLY_URL = 'https://calendly.com/shalupatil15/30min';
-const PAYPAL_CLIENT_ID = 'AcAOMwO2JL6E2Ka-Ddl7WZLt34i9BbY7kjE3oki25qrJ8yJj0iQI-ciH8QU8wdt0s3JXgmUqPfc6XddZ';
+const PAYPAL_CLIENT_ID = process.env.REACT_APP_PAYPAL_CLIENT_ID;
 const CONSULTATION_FEE = 50;
 
 const eb1aCriteria = [
@@ -55,8 +55,8 @@ const ConsultationSection = () => {
     });
   }, []);
 
-  // Live Stripe Payment Link
-  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/7sYcMXfK11IgcBT0Pc4Ja00';
+  // Uses sandbox locally (npm start), live in production (npm run build)
+  const STRIPE_PAYMENT_LINK = process.env.REACT_APP_STRIPE_PAYMENT_LINK;
 
   const handleStripePayment = () => {
     window.location.href = STRIPE_PAYMENT_LINK;
