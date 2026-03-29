@@ -393,43 +393,19 @@
   margin-bottom: 1.25rem;
 }
 
-.paypal-container {
-  margin-bottom: 1rem;
-}
-
-.payment-divider {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin: 1rem 0;
-}
-
-.payment-divider::before,
-.payment-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.payment-divider span {
-  color: #666;
-  font-size: 0.85rem;
-}
-
 .stripe-button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
   width: 100%;
-  padding: 0.85rem;
+  padding: 1rem;
   background: #635bff;
   color: #fff;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -437,6 +413,14 @@
 .stripe-button:hover {
   background: #5046e5;
   transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(99, 91, 255, 0.3);
+}
+
+.payment-note {
+  text-align: center;
+  color: #666;
+  font-size: 0.78rem;
+  margin-top: 0.75rem;
 }
 
 /* Confirmation Step */

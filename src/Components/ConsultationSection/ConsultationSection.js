@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { InlineWidget, useCalendlyEventListener } from 'react-calendly';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import {
   Calendar,
   CreditCard,
@@ -17,7 +16,6 @@ import {
 import './ConsultationSection.css';
 
 const CALENDLY_URL = 'https://calendly.com/shalupatil15/30min';
-const PAYPAL_CLIENT_ID = process.env.REACT_APP_PAYPAL_CLIENT_ID;
 const CONSULTATION_FEE = 50;
 
 const eb1aCriteria = [
@@ -40,22 +38,6 @@ const ConsultationSection = () => {
     onEventScheduled: () => setStep(3),
   });
 
-  const handlePayPalApprove = useCallback((_, actions) => {
-    return actions.order.capture().then(() => {
-      window.location.href = '/thank-you';
-    });
-  }, []);
-
-  const handlePayPalCreateOrder = useCallback((_, actions) => {
-    return actions.order.create({
-      purchase_units: [{
-        amount: { value: CONSULTATION_FEE.toString(), currency_code: 'USD' },
-        description: 'EB-1A Consultation with Shalmali Patil (1 Hour)',
-      }],
-    });
-  }, []);
-
-  // Uses sandbox locally (npm start), live in production (npm run build)
   const STRIPE_PAYMENT_LINK = process.env.REACT_APP_STRIPE_PAYMENT_LINK;
 
   const handleStripePayment = () => {
@@ -159,23 +141,11 @@ const ConsultationSection = () => {
                   <span className="price">${CONSULTATION_FEE}.00</span>
                 </div>
               </div>
-              <div className="payment-methods">
-                <h5>Choose Payment Method</h5>
-                <div className="paypal-container">
-                  <PayPalScriptProvider options={{ 'client-id': PAYPAL_CLIENT_ID, currency: 'USD' }}>
-                    <PayPalButtons
-                      style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 45 }}
-                      createOrder={handlePayPalCreateOrder}
-                      onApprove={handlePayPalApprove}
-                    />
-                  </PayPalScriptProvider>
-                </div>
-                <div className="payment-divider"><span>or</span></div>
-                <button className="stripe-button" onClick={handleStripePayment}>
-                  <CreditCard size={20} />
-                  <span>Pay with Card (Stripe)</span>
-                </button>
-              </div>
+              <button className="stripe-button" onClick={handleStripePayment}>
+                <CreditCard size={20} />
+                <span>Pay $50 — Secure Checkout</span>
+              </button>
+              <p className="payment-note">Powered by Stripe · Cards, Apple Pay, Google Pay & more</p>
             </div>
           </div>
         )}
