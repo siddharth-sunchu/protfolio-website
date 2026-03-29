@@ -55,9 +55,8 @@ const ConsultationSection = () => {
     });
   }, []);
 
-  // Sandbox link for testing; swap to live when ready:
-  // Live: https://buy.stripe.com/7sYcMXfK11IgcBT0Pc4Ja00
-  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_fZu6ozbq36YHgBvaYA53O00';
+  // Live Stripe Payment Link
+  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/7sYcMXfK11IgcBT0Pc4Ja00';
 
   const handleStripePayment = () => {
     window.location.href = STRIPE_PAYMENT_LINK;
