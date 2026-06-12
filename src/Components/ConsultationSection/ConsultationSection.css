@@ -756,3 +756,95 @@
   .bf-grid { grid-template-columns: 1fr; }
   .booking-picker { padding: 1.25rem; }
 }
+
+/* ── Month-grid calendar ──────────────────────────────────── */
+.cal-wrap {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+.cal-month { font-size: 1.05rem; font-weight: 700; }
+.cal-nav {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cal-nav:hover:not(:disabled) { border-color: #CDFF00; color: #CDFF00; }
+.cal-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.cal-dow span { text-align: center; font-size: 0.72rem; font-weight: 600; color: #888; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.95rem;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  position: relative;
+  color: #fff;
+}
+.cal-cell.empty { visibility: hidden; }
+.cal-cell.off { color: #555; }
+.cal-cell.avail { font-weight: 700; cursor: pointer; background: rgba(205, 255, 0, 0.08); }
+.cal-cell.avail:hover { background: rgba(205, 255, 0, 0.22); }
+.cal-cell.avail::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #CDFF00;
+}
+.cal-cell.today { box-shadow: inset 0 0 0 1.5px rgba(205, 255, 0, 0.45); }
+.cal-cell.sel { background: #CDFF00; color: #000; font-weight: 700; }
+.cal-cell.sel::after { background: #000; }
+
+.cal-empty { text-align: center; color: #999; font-size: 0.85rem; margin-top: 1.25rem; line-height: 1.6; }
+.cal-next-link {
+  display: block;
+  margin: 0.6rem auto 0;
+  background: transparent;
+  border: none;
+  color: #CDFF00;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cal-next-link:hover { text-decoration: underline; }
+
+.cal-times { min-width: 0; }
+.ct-day { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 0.9rem; }
+.ct-list { display: flex; flex-direction: column; gap: 0.6rem; max-height: 320px; overflow-y: auto; }
+.ct-hint { color: #888; font-size: 0.85rem; }
+
+@media (max-width: 640px) {
+  .cal-wrap { grid-template-columns: 1fr; gap: 1.25rem; }
+  .ct-list { max-height: none; }
+  .cal-cell { font-size: 1rem; }
+}

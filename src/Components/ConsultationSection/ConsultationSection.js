@@ -36,6 +36,9 @@ const eb1aCriteria = [
 const fmtTime = (iso) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
 const fmtFull = (iso) =>
   new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+const localKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const monthLabel = (d) => new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(d);
 
 const ConsultationSection = () => {
   // phase: picker → (Stripe) → confirming → confirmed | failed
@@ -48,6 +51,7 @@ const ConsultationSection = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [confirmation, setConfirmation] = useState(null);
+  const [viewMonth, setViewMonth] = useState(null); // first-of-month Date for the visible calendar month
 
   const tzLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -105,31 +109,28 @@ const ConsultationSection = () => {
     loadAvailability();
   }, [loadAvailability, pollBookingStatus]);
 
-  // Group slots into days (in the visitor's local timezone).
-  const days = useMemo(() => {
+  // Group slots by the visitor's LOCAL date.
+  const { byDay, availableKeys, firstDay, lastDay } = useMemo(() => {
     const map = new Map();
     for (const iso of slots) {
       const dt = new Date(iso);
-      const key = `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          weekday: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(dt),
-          dayNum: dt.getDate(),
-          month: new Intl.DateTimeFormat(undefined, { month: 'short' }).format(dt),
-          times: [],
-        });
-      }
+      const key = localKey(dt);
+      if (!map.has(key)) map.set(key, { date: new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()), times: [] });
       map.get(key).times.push(iso);
     }
-    return [...map.values()];
+    const sorted = [...map.values()].map((v) => v.date).sort((a, b) => a - b);
+    return { byDay: map, availableKeys: new Set(map.keys()), firstDay: sorted[0] || null, lastDay: sorted[sorted.length - 1] || null };
   }, [slots]);
 
+  // Auto-land on the first available day and open its month.
   useEffect(() => {
-    if (days.length && !days.some((d) => d.key === selectedDayKey)) setSelectedDayKey(days[0].key);
-  }, [days, selectedDayKey]);
+    if (firstDay && !selectedDayKey) {
+      setSelectedDayKey(localKey(firstDay));
+      setViewMonth(new Date(firstDay.getFullYear(), firstDay.getMonth(), 1));
+    }
+  }, [firstDay, selectedDayKey]);
 
-  const selectedDay = days.find((d) => d.key === selectedDayKey);
+  const selectedDay = selectedDayKey ? byDay.get(selectedDayKey) : null;
 
   const handleBook = async () => {
     if (!form.firstName || !form.lastName || !form.email || !form.phone) {
@@ -203,39 +204,83 @@ const ConsultationSection = () => {
           <div className="step-content">
             {loadingSlots ? (
               <div className="booking-loading"><Loader2 size={28} className="spin" /><p>Loading available times…</p></div>
-            ) : days.length === 0 ? (
+            ) : availableKeys.size === 0 || !viewMonth ? (
               <div className="booking-empty"><p>No times are open right now — please check back soon.</p></div>
             ) : (
               <div className="booking-picker">
                 <div className="picker-tz">Times shown in your timezone · {tzLabel}</div>
 
-                <div className="day-strip">
-                  {days.map((d) => (
-                    <button
-                      key={d.key}
-                      className={`day-pill ${selectedDayKey === d.key ? 'active' : ''}`}
-                      onClick={() => { setSelectedDayKey(d.key); setSelectedSlot(null); }}
-                    >
-                      <span className="dp-weekday">{d.weekday}</span>
-                      <span className="dp-day">{d.dayNum}</span>
-                      <span className="dp-mon">{d.month}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {selectedDay && (
-                  <div className="time-grid">
-                    {selectedDay.times.map((iso) => (
-                      <button
-                        key={iso}
-                        className={`time-pill ${selectedSlot === iso ? 'active' : ''}`}
-                        onClick={() => { setSelectedSlot(iso); setError(''); }}
-                      >
-                        {fmtTime(iso)}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const year = viewMonth.getFullYear();
+                  const month = viewMonth.getMonth();
+                  const firstWeekday = new Date(year, month, 1).getDay();
+                  const daysInMonth = new Date(year, month + 1, 0).getDate();
+                  const todayKey = localKey(new Date());
+                  const firstMonth = firstDay && new Date(firstDay.getFullYear(), firstDay.getMonth(), 1);
+                  const lastMonth = lastDay && new Date(lastDay.getFullYear(), lastDay.getMonth(), 1);
+                  const canPrev = firstMonth && viewMonth > firstMonth;
+                  const canNext = lastMonth && viewMonth < lastMonth;
+                  const monthHasAvail = [...byDay.values()].some((v) => v.date.getFullYear() === year && v.date.getMonth() === month);
+                  const nextAvail = [...byDay.values()].map((v) => v.date).sort((a, b) => a - b)
+                    .find((d) => d.getFullYear() > year || (d.getFullYear() === year && d.getMonth() > month));
+                  const cells = [];
+                  for (let i = 0; i < firstWeekday; i++) cells.push(null);
+                  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+                  return (
+                    <div className="cal-wrap">
+                      <div className="cal">
+                        <div className="cal-head">
+                          <button className="cal-nav" disabled={!canPrev} aria-label="Previous month"
+                            onClick={() => setViewMonth(new Date(year, month - 1, 1))}>‹</button>
+                          <span className="cal-month">{monthLabel(viewMonth)}</span>
+                          <button className="cal-nav" disabled={!canNext} aria-label="Next month"
+                            onClick={() => setViewMonth(new Date(year, month + 1, 1))}>›</button>
+                        </div>
+                        <div className="cal-dow">{WEEKDAYS.map((w) => <span key={w}>{w}</span>)}</div>
+                        <div className="cal-grid">
+                          {cells.map((d, i) => {
+                            if (d === null) return <span key={`b${i}`} className="cal-cell empty" />;
+                            const key = localKey(new Date(year, month, d));
+                            const avail = availableKeys.has(key);
+                            const cls = `cal-cell ${avail ? 'avail' : 'off'} ${selectedDayKey === key ? 'sel' : ''} ${key === todayKey ? 'today' : ''}`;
+                            return avail ? (
+                              <button key={key} className={cls} aria-pressed={selectedDayKey === key}
+                                onClick={() => { setSelectedDayKey(key); setSelectedSlot(null); setError(''); }}>{d}</button>
+                            ) : (
+                              <span key={key} className={cls} aria-disabled="true">{d}</span>
+                            );
+                          })}
+                        </div>
+                        {!monthHasAvail && (
+                          <div className="cal-empty">
+                            No openings in {new Intl.DateTimeFormat(undefined, { month: 'long' }).format(viewMonth)}.
+                            {nextAvail && (
+                              <button className="cal-next-link"
+                                onClick={() => { setViewMonth(new Date(nextAvail.getFullYear(), nextAvail.getMonth(), 1)); setSelectedDayKey(localKey(nextAvail)); setSelectedSlot(null); }}>
+                                Next available: {new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).format(nextAvail)} →
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="cal-times">
+                        {selectedDay ? (
+                          <>
+                            <div className="ct-day">{new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).format(selectedDay.date)}</div>
+                            <div className="ct-list">
+                              {selectedDay.times.map((iso) => (
+                                <button key={iso} className={`time-pill ${selectedSlot === iso ? 'active' : ''}`}
+                                  onClick={() => { setSelectedSlot(iso); setError(''); }}>{fmtTime(iso)}</button>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="ct-hint">Select a date to see available times.</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {selectedSlot && (
                   <div className="booking-form">
