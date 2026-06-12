@@ -46,6 +46,31 @@ export async function onRequestGet(context) {
     return json({ paid: false });
   }
 
+  // Capture the paid booking into D1 (best-effort — never block scheduling).
+  // Writes happen ONLY for genuinely paid sessions, and INSERT OR IGNORE on the
+  // session_id dedupes repeat verifies, so this path cannot be spammed.
+  if (env.DB) {
+    try {
+      const cd = session.customer_details || {};
+      await env.DB.prepare(
+        `INSERT OR IGNORE INTO bookings
+           (session_id, email, name, amount_total, currency, payment_status)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+        .bind(
+          session.id || sessionId,
+          cd.email || null,
+          cd.name || null,
+          session.amount_total ?? null,
+          session.currency || null,
+          session.payment_status,
+        )
+        .run();
+    } catch (err) {
+      // Intentionally swallowed — logging must not break the booking flow.
+    }
+  }
+
   if (!env.CALENDLY_URL) {
     return json({ paid: false, error: 'Scheduling is not configured (missing CALENDLY_URL).' }, 500);
   }

@@ -9,6 +9,12 @@
 #   npx wrangler pages secret put CALENDLY_URL
 # For local dev, put them in a .dev.vars file (git-ignored).
 
-name = "shalmali-eb1a"
+name = "shalmalipatil"
 compatibility_date = "2024-11-01"
 pages_build_output_dir = "build"
+
+# D1 database for capturing paid-booking records (schema in db/schema.sql).
+[[d1_databases]]
+binding = "DB"
+database_name = "shalmali-bookings"
+database_id = "97ea2a66-9c37-4f5f-871b-07416b36120a"
