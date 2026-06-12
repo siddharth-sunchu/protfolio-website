@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { InlineWidget, useCalendlyEventListener } from 'react-calendly';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Calendar,
-  CreditCard,
+  Clock,
   CheckCircle,
   FileText,
   Award,
@@ -11,10 +10,11 @@ import {
   Globe,
   Star,
   DollarSign,
-  Clock,
   Heart,
   Loader2,
   AlertCircle,
+  CreditCard,
+  Video,
 } from 'lucide-react';
 import './ConsultationSection.css';
 
@@ -33,71 +33,135 @@ const eb1aCriteria = [
   { icon: <Star size={20} />, title: 'Commercial Success', desc: 'Commercial successes in the performing arts' },
 ];
 
+const fmtTime = (iso) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+const fmtFull = (iso) =>
+  new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+
 const ConsultationSection = () => {
-  // Flow order: 1 = Pay (Stripe), 2 = Schedule (Calendly), 3 = Confirmed.
-  // Payment is verified server-side before the Calendly scheduler is revealed.
-  const [step, setStep] = useState(1);
-  const [calendlyUrl, setCalendlyUrl] = useState('');
-  const [processing, setProcessing] = useState(false); // creating the checkout session
-  const [verifying, setVerifying] = useState(false); // confirming payment on return
+  // phase: picker → (Stripe) → confirming → confirmed | failed
+  const [phase, setPhase] = useState('picker');
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(true);
+  const [selectedDayKey, setSelectedDayKey] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [confirmation, setConfirmation] = useState(null);
 
-  // On return from Stripe, confirm the payment with our API BEFORE showing the
-  // scheduler. The Calendly URL is only returned by the API once payment is
-  // verified — it is never present in the page bundle.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
-    if (!sessionId) return;
+  const tzLabel = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    setVerifying(true);
-    setError('');
-    fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.paid && data.calendlyUrl) {
-          setCalendlyUrl(data.calendlyUrl);
-          setStep(2);
-          window.setTimeout(() => {
-            document
-              .getElementById('booking')
-              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 100);
-        } else {
-          setError(
-            data.error ||
-              "We couldn't confirm your payment. If you were charged, please email shalupatil15@gmail.com and we'll sort it out right away.",
-          );
-        }
-      })
-      .catch(() => {
-        setError('Something went wrong while confirming your payment. Please refresh, or contact us if you were charged.');
-      })
-      .finally(() => setVerifying(false));
+  const loadAvailability = useCallback(async () => {
+    setLoadingSlots(true);
+    try {
+      const res = await fetch('/api/availability');
+      const data = await res.json();
+      setSlots(Array.isArray(data.slots) ? data.slots : []);
+    } catch {
+      setError('Could not load available times. Please refresh.');
+    }
+    setLoadingSlots(false);
   }, []);
 
-  // Calendly fires this once the visitor has confirmed a time slot.
-  useCalendlyEventListener({
-    onEventScheduled: () => setStep(3),
-  });
+  const pollBookingStatus = useCallback(async (sessionId, attempt = 0) => {
+    try {
+      const res = await fetch(`/api/booking-status?session_id=${encodeURIComponent(sessionId)}`);
+      const data = await res.json();
+      if (data.status === 'confirmed') {
+        setConfirmation(data);
+        setPhase('confirmed');
+        return;
+      }
+      if (data.status === 'processing' && attempt < 10) {
+        setTimeout(() => pollBookingStatus(sessionId, attempt + 1), 2000);
+        return;
+      }
+      if (data.status === 'processing') {
+        // Took long, but payment succeeded — show optimistic confirmation.
+        setConfirmation({ slotStart: data.slotStart, meetLink: null });
+        setPhase('confirmed');
+        return;
+      }
+      setError(data.error || "We couldn't confirm your booking. If you were charged, email shalupatil15@gmail.com.");
+      setPhase('failed');
+    } catch {
+      setError('Could not confirm your booking. If you were charged, please contact us.');
+      setPhase('failed');
+    }
+  }, []);
 
-  const handleStripePayment = async () => {
-    setProcessing(true);
+  // On mount: handle Stripe return, otherwise load availability.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('booking') === 'confirmed' && params.get('session_id')) {
+      setPhase('confirming');
+      setTimeout(() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+      pollBookingStatus(params.get('session_id'));
+      return;
+    }
+    if (params.get('booking') === 'cancelled') {
+      setError('Payment was cancelled and your slot was released. Pick a time to try again.');
+    }
+    loadAvailability();
+  }, [loadAvailability, pollBookingStatus]);
+
+  // Group slots into days (in the visitor's local timezone).
+  const days = useMemo(() => {
+    const map = new Map();
+    for (const iso of slots) {
+      const dt = new Date(iso);
+      const key = `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          weekday: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(dt),
+          dayNum: dt.getDate(),
+          month: new Intl.DateTimeFormat(undefined, { month: 'short' }).format(dt),
+          times: [],
+        });
+      }
+      map.get(key).times.push(iso);
+    }
+    return [...map.values()];
+  }, [slots]);
+
+  useEffect(() => {
+    if (days.length && !days.some((d) => d.key === selectedDayKey)) setSelectedDayKey(days[0].key);
+  }, [days, selectedDayKey]);
+
+  const selectedDay = days.find((d) => d.key === selectedDayKey);
+
+  const handleBook = async () => {
+    if (!form.firstName || !form.lastName || !form.email || !form.phone) {
+      setError('Please fill in every field.');
+      return;
+    }
+    setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('/api/create-checkout-session', { method: 'POST' });
+      const res = await fetch('/api/hold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotStart: selectedSlot, ...form }),
+      });
       const data = await res.json();
       if (res.ok && data.url) {
         window.location.href = data.url;
-      } else {
-        setError(data.error || 'Could not start checkout. Please try again.');
-        setProcessing(false);
+        return;
       }
-    } catch (err) {
-      setError('Could not reach the payment service. Please try again.');
-      setProcessing(false);
+      setError(data.error || 'Could not start checkout. Please try again.');
+      setSubmitting(false);
+      if (res.status === 409) {
+        setSelectedSlot(null);
+        loadAvailability();
+      }
+    } catch {
+      setError('Could not reach the booking service. Please try again.');
+      setSubmitting(false);
     }
   };
+
+  const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
     <div className="consultation-container">
@@ -123,136 +187,135 @@ const ConsultationSection = () => {
         </div>
       </div>
 
-      {/* Booking Flow */}
+      {/* Booking */}
       <div className="booking-flow" id="booking">
         <h3 className="section-heading">
           Book Your <span className="highlight">Consultation</span>
         </h3>
 
-        <div className="step-indicators">
-          <div className={`step-indicator ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-            <div className="step-number">{step > 1 ? <CheckCircle size={18} /> : '1'}</div>
-            <span>Pay</span>
-          </div>
-          <div className="step-line" />
-          <div className={`step-indicator ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-            <div className="step-number">{step > 2 ? <CheckCircle size={18} /> : '2'}</div>
-            <span>Schedule</span>
-          </div>
-          <div className="step-line" />
-          <div className={`step-indicator ${step >= 3 ? 'active' : ''}`}>
-            <div className="step-number">{step >= 3 ? <CheckCircle size={18} /> : '3'}</div>
-            <span>Confirmed</span>
-          </div>
+        <div className="booking-meta">
+          <span><Clock size={16} /> 30 minutes</span>
+          <span><Video size={16} /> Google Meet</span>
+          <span><CreditCard size={16} /> ${CONSULTATION_FEE} · paid to confirm</span>
         </div>
 
-        {verifying && (
-          <div className="step-content payment-step">
-            <div className="payment-card" style={{ textAlign: 'center' }}>
-              <Loader2 size={32} className="success-icon spin" />
-              <h4>Confirming your payment…</h4>
-              <p className="payment-note">This only takes a moment.</p>
-            </div>
-          </div>
-        )}
+        {phase === 'picker' && (
+          <div className="step-content">
+            {loadingSlots ? (
+              <div className="booking-loading"><Loader2 size={28} className="spin" /><p>Loading available times…</p></div>
+            ) : days.length === 0 ? (
+              <div className="booking-empty"><p>No times are open right now — please check back soon.</p></div>
+            ) : (
+              <div className="booking-picker">
+                <div className="picker-tz">Times shown in your timezone · {tzLabel}</div>
 
-        {!verifying && step === 1 && (
-          <div className="step-content payment-step">
-            <div className="payment-card">
-              <div className="payment-header">
-                <CreditCard size={32} className="success-icon" />
-                <h4>Reserve Your Consultation</h4>
-                <p>Pay the consultation fee to unlock scheduling — you'll pick your time right after checkout.</p>
+                <div className="day-strip">
+                  {days.map((d) => (
+                    <button
+                      key={d.key}
+                      className={`day-pill ${selectedDayKey === d.key ? 'active' : ''}`}
+                      onClick={() => { setSelectedDayKey(d.key); setSelectedSlot(null); }}
+                    >
+                      <span className="dp-weekday">{d.weekday}</span>
+                      <span className="dp-day">{d.dayNum}</span>
+                      <span className="dp-mon">{d.month}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {selectedDay && (
+                  <div className="time-grid">
+                    {selectedDay.times.map((iso) => (
+                      <button
+                        key={iso}
+                        className={`time-pill ${selectedSlot === iso ? 'active' : ''}`}
+                        onClick={() => { setSelectedSlot(iso); setError(''); }}
+                      >
+                        {fmtTime(iso)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {selectedSlot && (
+                  <div className="booking-form">
+                    <div className="bf-selected"><CheckCircle size={16} /> {fmtFull(selectedSlot)}</div>
+                    <div className="bf-grid">
+                      <input className="bf-input" placeholder="First name" value={form.firstName} onChange={setField('firstName')} />
+                      <input className="bf-input" placeholder="Last name" value={form.lastName} onChange={setField('lastName')} />
+                      <input className="bf-input" type="email" placeholder="Email address" value={form.email} onChange={setField('email')} />
+                      <input className="bf-input" type="tel" placeholder="Phone number" value={form.phone} onChange={setField('phone')} />
+                    </div>
+
+                    <div className="payment-summary">
+                      <div className="summary-row">
+                        <span>EB-1A Consultation (30 Min)</span>
+                        <span className="price">${CONSULTATION_FEE}.00</span>
+                      </div>
+                      <div className="summary-divider" />
+                      <div className="summary-row total">
+                        <span>Total</span>
+                        <span className="price">${CONSULTATION_FEE}.00</span>
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="payment-error"><AlertCircle size={16} /><span>{error}</span></div>
+                    )}
+
+                    <button className="stripe-button" onClick={handleBook} disabled={submitting}>
+                      {submitting ? <Loader2 size={20} className="spin" /> : <CreditCard size={20} />}
+                      <span>{submitting ? 'Starting secure checkout…' : `Pay $${CONSULTATION_FEE} & Book`}</span>
+                    </button>
+                    <p className="payment-note">
+                      No refunds · reschedule via your calendar invite · have a promo code? Add it at checkout.
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="payment-summary">
-                <div className="summary-row">
-                  <span>EB-1A Consultation (30 Min)</span>
-                  <span className="price">${CONSULTATION_FEE}.00</span>
-                </div>
-                <div className="summary-divider" />
-                <div className="summary-row total">
-                  <span>Total</span>
-                  <span className="price">${CONSULTATION_FEE}.00</span>
-                </div>
-              </div>
-              <p className="payment-note">Have a promo code? Add it on the secure checkout page to apply your discount.</p>
-              {error && (
-                <div className="payment-error">
-                  <AlertCircle size={16} />
-                  <span>{error}</span>
-                </div>
-              )}
-              <button className="stripe-button" onClick={handleStripePayment} disabled={processing}>
-                {processing ? <Loader2 size={20} className="spin" /> : <CreditCard size={20} />}
-                <span>{processing ? 'Starting secure checkout…' : 'Pay $50 & Reserve — Secure Checkout'}</span>
-              </button>
-              <p className="payment-note">Powered by Stripe · Cards, Apple Pay, Google Pay &amp; more</p>
-            </div>
+            )}
           </div>
         )}
 
-        {!verifying && step === 2 && calendlyUrl && (
-          <div className="step-content calendly-step-wrapper">
-            <div className="payment-header">
-              <CheckCircle size={32} className="success-icon" />
-              <h4>Payment Received</h4>
-              <p>Pick your 30-minute slot below to lock in your consultation.</p>
-            </div>
-            <div className="calendly-step">
-              <InlineWidget
-                url={calendlyUrl}
-                styles={{ height: '700px', width: '100%' }}
-                pageSettings={{
-                  backgroundColor: '000000',
-                  hideEventTypeDetails: false,
-                  hideLandingPageDetails: false,
-                  primaryColor: 'CDFF00',
-                  textColor: 'ffffff',
-                }}
-              />
-            </div>
+        {phase === 'confirming' && (
+          <div className="step-content">
+            <div className="booking-loading"><Loader2 size={28} className="spin" /><p>Confirming your booking…</p></div>
           </div>
         )}
 
-        {!verifying && step === 3 && (
+        {phase === 'confirmed' && confirmation && (
           <div className="step-content confirmation-step">
             <div className="confirmation-card">
-              <div className="confirmation-icon-wrapper">
-                <CheckCircle size={64} className="confirmation-icon" />
-              </div>
-              <h4>You're All Set!</h4>
+              <CheckCircle size={56} className="confirmation-icon" />
+              <h4>You're booked! 🎉</h4>
               <p className="confirmation-main-text">
-                Your 30-minute EB-1A consultation is booked and paid. A calendar
-                invite with the meeting link is on its way to your inbox.
+                Your 30-minute EB-1A consultation is confirmed for{' '}
+                <strong>{confirmation.slotStart ? fmtFull(confirmation.slotStart) : 'your selected time'}</strong>.
+                A Google Calendar invite with your Meet link is on its way to your inbox.
               </p>
-              <div className="confirmation-message">
-                <Heart size={20} className="heart-icon" />
-                <p>
-                  Shalmali looks forward to reviewing your profile and helping you
-                  craft a compelling EB-1A strategy. Every great journey starts
-                  with a single step — and you've just taken yours.
-                </p>
-              </div>
+              {confirmation.meetLink && (
+                <a className="meet-button" href={confirmation.meetLink} target="_blank" rel="noreferrer">
+                  <Video size={18} /> Join Google Meet
+                </a>
+              )}
               <div className="confirmation-details">
-                <h5>What to Expect Next</h5>
-                <div className="detail-item">
-                  <Calendar size={18} />
-                  <span>A calendar invite with the meeting link will arrive shortly</span>
-                </div>
-                <div className="detail-item">
-                  <FileText size={18} />
-                  <span>Prepare your resume, publications list, and any awards or recognitions</span>
-                </div>
-                <div className="detail-item">
-                  <Clock size={18} />
-                  <span>Your 30-minute session covers profile evaluation, evidence gaps, and next steps</span>
-                </div>
+                <div className="detail-item"><Calendar size={18} /><span>Need to reschedule? Use the link in your Google Calendar invite.</span></div>
+                <div className="detail-item"><FileText size={18} /><span>Have your CV, publication list, and awards handy for the call.</span></div>
+                <div className="detail-item"><Heart size={18} /><span>Shalmali looks forward to helping you craft a compelling EB-1A strategy.</span></div>
               </div>
               <div className="confirmation-footer">
-                <p>Questions before your session? Reach out at{' '}
-                  <a href="mailto:shalupatil15@gmail.com">shalupatil15@gmail.com</a>
-                </p>
+                <p>Questions before your session? <a href="mailto:shalupatil15@gmail.com">shalupatil15@gmail.com</a></p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {phase === 'failed' && (
+          <div className="step-content">
+            <div className="payment-card" style={{ textAlign: 'center' }}>
+              <AlertCircle size={32} style={{ color: '#ff8d8d', marginBottom: '0.75rem' }} />
+              <h4>Booking not confirmed</h4>
+              <p className="payment-note">{error}</p>
             </div>
           </div>
         )}

@@ -13,8 +13,14 @@ name = "shalmalipatil"
 compatibility_date = "2024-11-01"
 pages_build_output_dir = "build"
 
-# D1 database for capturing paid-booking records (schema in db/schema.sql).
+# D1 database for bookings (legacy capture + custom scheduler).
+# Schemas: db/schema.sql (legacy bookings) + db/booking-schema.sql (slot_reservations, app_config).
 [[d1_databases]]
 binding = "DB"
 database_name = "shalmali-bookings"
 database_id = "97ea2a66-9c37-4f5f-871b-07416b36120a"
+
+# Public (non-secret) vars. Secrets (GOOGLE_CLIENT_SECRET, STRIPE_SECRET_KEY,
+# STRIPE_WEBHOOK_SECRET, ADMIN_SETUP_TOKEN) are set via `wrangler pages secret put`.
+[vars]
+GOOGLE_CLIENT_ID = "171305717290-l2jc1quuh1keccaosiqd778o3ummqbbu.apps.googleusercontent.com"
