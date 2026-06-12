@@ -34,7 +34,7 @@ const HeroSection = () => (
       </div>
       <div className="stat-divider" />
       <div className="stat-block">
-        <span className="stat-number">1 Hour</span>
+        <span className="stat-number">30 Min</span>
         <span className="stat-label">Deep-Dive Session</span>
       </div>
       <div className="stat-divider" />

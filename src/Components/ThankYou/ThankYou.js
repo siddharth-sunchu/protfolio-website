@@ -57,7 +57,7 @@ const ThankYou = () => {
             </div>
             <div className="next-step-item">
               <Clock size={20} />
-              <span>Your 1-hour session will cover profile evaluation, evidence gaps, and next steps</span>
+              <span>Your 30-minute session will cover profile evaluation, evidence gaps, and next steps</span>
             </div>
           </div>
 

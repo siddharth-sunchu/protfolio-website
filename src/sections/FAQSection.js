@@ -5,7 +5,7 @@ import './FAQSection.css';
 const faqs = [
   {
     q: 'What exactly happens during the consultation?',
-    a: 'We spend 1 hour reviewing your professional background, achievements, and goals. I evaluate which EB-1A criteria you may meet, identify gaps, and give you a clear picture of where you stand — along with practical next steps.',
+    a: 'We spend 30 minutes reviewing your professional background, achievements, and goals. I evaluate which EB-1A criteria you may meet, identify gaps, and give you a clear picture of where you stand — along with practical next steps.',
   },
   {
     q: 'Is this legal advice?',

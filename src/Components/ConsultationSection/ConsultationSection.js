@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { InlineWidget, useCalendlyEventListener } from 'react-calendly';
 import {
   Calendar,
@@ -10,12 +10,14 @@ import {
   BookOpen,
   Globe,
   Star,
-  ArrowRight,
-  DollarSign
+  DollarSign,
+  Clock,
+  Heart,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import './ConsultationSection.css';
 
-const CALENDLY_URL = 'https://calendly.com/shalupatil15/30min';
 const CONSULTATION_FEE = 50;
 
 const eb1aCriteria = [
@@ -32,16 +34,69 @@ const eb1aCriteria = [
 ];
 
 const ConsultationSection = () => {
+  // Flow order: 1 = Pay (Stripe), 2 = Schedule (Calendly), 3 = Confirmed.
+  // Payment is verified server-side before the Calendly scheduler is revealed.
   const [step, setStep] = useState(1);
+  const [calendlyUrl, setCalendlyUrl] = useState('');
+  const [processing, setProcessing] = useState(false); // creating the checkout session
+  const [verifying, setVerifying] = useState(false); // confirming payment on return
+  const [error, setError] = useState('');
 
+  // On return from Stripe, confirm the payment with our API BEFORE showing the
+  // scheduler. The Calendly URL is only returned by the API once payment is
+  // verified — it is never present in the page bundle.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    if (!sessionId) return;
+
+    setVerifying(true);
+    setError('');
+    fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.paid && data.calendlyUrl) {
+          setCalendlyUrl(data.calendlyUrl);
+          setStep(2);
+          window.setTimeout(() => {
+            document
+              .getElementById('booking')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        } else {
+          setError(
+            data.error ||
+              "We couldn't confirm your payment. If you were charged, please email shalupatil15@gmail.com and we'll sort it out right away.",
+          );
+        }
+      })
+      .catch(() => {
+        setError('Something went wrong while confirming your payment. Please refresh, or contact us if you were charged.');
+      })
+      .finally(() => setVerifying(false));
+  }, []);
+
+  // Calendly fires this once the visitor has confirmed a time slot.
   useCalendlyEventListener({
     onEventScheduled: () => setStep(3),
   });
 
-  const STRIPE_PAYMENT_LINK = process.env.REACT_APP_STRIPE_PAYMENT_LINK;
-
-  const handleStripePayment = () => {
-    window.location.href = STRIPE_PAYMENT_LINK;
+  const handleStripePayment = async () => {
+    setProcessing(true);
+    setError('');
+    try {
+      const res = await fetch('/api/create-checkout-session', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || 'Could not start checkout. Please try again.');
+        setProcessing(false);
+      }
+    } catch (err) {
+      setError('Could not reach the payment service. Please try again.');
+      setProcessing(false);
+    }
   };
 
   return (
@@ -77,7 +132,7 @@ const ConsultationSection = () => {
         <div className="step-indicators">
           <div className={`step-indicator ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
             <div className="step-number">{step > 1 ? <CheckCircle size={18} /> : '1'}</div>
-            <span>Choose Time</span>
+            <span>Pay</span>
           </div>
           <div className="step-line" />
           <div className={`step-indicator ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
@@ -85,54 +140,33 @@ const ConsultationSection = () => {
             <span>Schedule</span>
           </div>
           <div className="step-line" />
-          <div className={`step-indicator ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`}>
-            <div className="step-number">{step > 3 ? <CheckCircle size={18} /> : '3'}</div>
-            <span>Payment</span>
+          <div className={`step-indicator ${step >= 3 ? 'active' : ''}`}>
+            <div className="step-number">{step >= 3 ? <CheckCircle size={18} /> : '3'}</div>
+            <span>Confirmed</span>
           </div>
         </div>
 
-        {step === 1 && (
-          <div className="step-content step-cta">
-            <div className="cta-card">
-              <Calendar size={48} className="cta-icon" />
-              <h4>Ready to Start Your EB-1A Journey?</h4>
-              <p>Select a convenient time slot for your 1-hour consultation.</p>
-              <button className="cta-button" onClick={() => setStep(2)}>
-                <span>Book Your Consultation</span>
-                <ArrowRight size={20} />
-              </button>
-              <p className="cta-note">$50 consultation fee · Payable after booking</p>
+        {verifying && (
+          <div className="step-content payment-step">
+            <div className="payment-card" style={{ textAlign: 'center' }}>
+              <Loader2 size={32} className="success-icon spin" />
+              <h4>Confirming your payment…</h4>
+              <p className="payment-note">This only takes a moment.</p>
             </div>
           </div>
         )}
 
-        {step === 2 && (
-          <div className="step-content calendly-step">
-            <InlineWidget
-              url={CALENDLY_URL}
-              styles={{ height: '700px', width: '100%' }}
-              pageSettings={{
-                backgroundColor: '000000',
-                hideEventTypeDetails: false,
-                hideLandingPageDetails: false,
-                primaryColor: 'CDFF00',
-                textColor: 'ffffff',
-              }}
-            />
-          </div>
-        )}
-
-        {step === 3 && (
+        {!verifying && step === 1 && (
           <div className="step-content payment-step">
             <div className="payment-card">
               <div className="payment-header">
-                <CheckCircle size={32} className="success-icon" />
-                <h4>Meeting Booked Successfully!</h4>
-                <p>Complete your payment to confirm the consultation.</p>
+                <CreditCard size={32} className="success-icon" />
+                <h4>Reserve Your Consultation</h4>
+                <p>Pay the consultation fee to unlock scheduling — you'll pick your time right after checkout.</p>
               </div>
               <div className="payment-summary">
                 <div className="summary-row">
-                  <span>EB-1A Consultation (1 Hour)</span>
+                  <span>EB-1A Consultation (30 Min)</span>
                   <span className="price">${CONSULTATION_FEE}.00</span>
                 </div>
                 <div className="summary-divider" />
@@ -141,11 +175,84 @@ const ConsultationSection = () => {
                   <span className="price">${CONSULTATION_FEE}.00</span>
                 </div>
               </div>
-              <button className="stripe-button" onClick={handleStripePayment}>
-                <CreditCard size={20} />
-                <span>Pay $50 — Secure Checkout</span>
+              <p className="payment-note">Have a promo code? Add it on the secure checkout page to apply your discount.</p>
+              {error && (
+                <div className="payment-error">
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
+              <button className="stripe-button" onClick={handleStripePayment} disabled={processing}>
+                {processing ? <Loader2 size={20} className="spin" /> : <CreditCard size={20} />}
+                <span>{processing ? 'Starting secure checkout…' : 'Pay $50 & Reserve — Secure Checkout'}</span>
               </button>
-              <p className="payment-note">Powered by Stripe · Cards, Apple Pay, Google Pay & more</p>
+              <p className="payment-note">Powered by Stripe · Cards, Apple Pay, Google Pay &amp; more</p>
+            </div>
+          </div>
+        )}
+
+        {!verifying && step === 2 && calendlyUrl && (
+          <div className="step-content calendly-step-wrapper">
+            <div className="payment-header">
+              <CheckCircle size={32} className="success-icon" />
+              <h4>Payment Received</h4>
+              <p>Pick your 30-minute slot below to lock in your consultation.</p>
+            </div>
+            <div className="calendly-step">
+              <InlineWidget
+                url={calendlyUrl}
+                styles={{ height: '700px', width: '100%' }}
+                pageSettings={{
+                  backgroundColor: '000000',
+                  hideEventTypeDetails: false,
+                  hideLandingPageDetails: false,
+                  primaryColor: 'CDFF00',
+                  textColor: 'ffffff',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {!verifying && step === 3 && (
+          <div className="step-content confirmation-step">
+            <div className="confirmation-card">
+              <div className="confirmation-icon-wrapper">
+                <CheckCircle size={64} className="confirmation-icon" />
+              </div>
+              <h4>You're All Set!</h4>
+              <p className="confirmation-main-text">
+                Your 30-minute EB-1A consultation is booked and paid. A calendar
+                invite with the meeting link is on its way to your inbox.
+              </p>
+              <div className="confirmation-message">
+                <Heart size={20} className="heart-icon" />
+                <p>
+                  Shalmali looks forward to reviewing your profile and helping you
+                  craft a compelling EB-1A strategy. Every great journey starts
+                  with a single step — and you've just taken yours.
+                </p>
+              </div>
+              <div className="confirmation-details">
+                <h5>What to Expect Next</h5>
+                <div className="detail-item">
+                  <Calendar size={18} />
+                  <span>A calendar invite with the meeting link will arrive shortly</span>
+                </div>
+                <div className="detail-item">
+                  <FileText size={18} />
+                  <span>Prepare your resume, publications list, and any awards or recognitions</span>
+                </div>
+                <div className="detail-item">
+                  <Clock size={18} />
+                  <span>Your 30-minute session covers profile evaluation, evidence gaps, and next steps</span>
+                </div>
+              </div>
+              <div className="confirmation-footer">
+                <p>Questions before your session? Reach out at{' '}
+                  <a href="mailto:shalupatil15@gmail.com">shalupatil15@gmail.com</a>
+                </p>
+              </div>
             </div>
           </div>
         )}

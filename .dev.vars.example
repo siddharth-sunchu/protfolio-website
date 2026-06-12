@@ -1,0 +1,12 @@
+# Local development secrets for Cloudflare Pages Functions.
+# Copy this file to ".dev.vars" (which is git-ignored) and fill in real values.
+# Used by: npx wrangler pages dev build
+#
+# Stripe secret key — use a TEST key (sk_test_...) for local development.
+STRIPE_SECRET_KEY=sk_test_your_key_here
+
+# The Calendly 30-minute scheduling link, revealed only after a verified payment.
+CALENDLY_URL=https://calendly.com/shalupatil15/30min
+
+# Optional: override the redirect origin. Defaults to the request origin.
+# SITE_URL=http://localhost:8788

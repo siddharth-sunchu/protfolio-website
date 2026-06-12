@@ -596,3 +596,32 @@
 .confirmation-footer a:hover {
   opacity: 0.8;
 }
+
+/* Loading spinner + inline error (payment API states) */
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.payment-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 80, 80, 0.1);
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  color: #ff8d8d;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+}
+
+.payment-error svg {
+  flex-shrink: 0;
+}

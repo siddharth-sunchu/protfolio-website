@@ -6,14 +6,14 @@ const steps = [
   {
     num: '01',
     icon: <Calendar size={28} />,
-    title: 'Book Your Session',
-    desc: 'Pick a time that works for you. Pay the $50 consultation fee to confirm.',
+    title: 'Reserve Your Session',
+    desc: 'Pay the $50 consultation fee first, then pick a 30-minute time slot that works for you.',
   },
   {
     num: '02',
     icon: <MessageSquare size={28} />,
     title: 'Deep-Dive Conversation',
-    desc: 'We review your background, achievements, and goals in a focused 1-hour call.',
+    desc: 'We review your background, achievements, and goals in a focused 30-minute call.',
   },
   {
     num: '03',

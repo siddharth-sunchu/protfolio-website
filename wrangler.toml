@@ -1,0 +1,14 @@
+# Cloudflare Pages configuration for manual deploys.
+#
+# Deploy:   npm run build && npx wrangler pages deploy build
+# Local:    npm run build && npx wrangler pages dev build
+#
+# Secrets are NOT stored here. Set them in the Cloudflare dashboard
+# (Pages project → Settings → Variables & Secrets) or with:
+#   npx wrangler pages secret put STRIPE_SECRET_KEY
+#   npx wrangler pages secret put CALENDLY_URL
+# For local dev, put them in a .dev.vars file (git-ignored).
+
+name = "shalmali-eb1a"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "build"
