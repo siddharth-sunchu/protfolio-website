@@ -5,7 +5,7 @@ import './FAQSection.css';
 const faqs = [
   {
     q: 'What exactly happens during the consultation?',
-    a: 'We spend 30 minutes reviewing your professional background, achievements, and goals. I evaluate which EB-1A criteria you may meet, identify gaps, and give you a clear picture of where you stand — along with practical next steps.',
+    a: 'We spend 60 minutes reviewing your professional background, achievements, and goals. I evaluate which EB-1A criteria you may meet, identify gaps, and give you a clear picture of where you stand — along with practical next steps.',
   },
   {
     q: 'Is this legal advice?',
@@ -28,7 +28,7 @@ const faqs = [
     a: 'That\'s one of the most valuable outcomes of a consultation. If you\'re not ready today, I\'ll help you understand exactly what to work on and create a timeline so you can be ready in 6-12 months.',
   },
   {
-    q: 'Is the $50 fee refundable?',
+    q: 'Is the $69.99 fee refundable?',
     a: 'The consultation fee is non-refundable as it reserves dedicated time for your session. However, if you need to reschedule, I\'m happy to accommodate.',
   },
 ];

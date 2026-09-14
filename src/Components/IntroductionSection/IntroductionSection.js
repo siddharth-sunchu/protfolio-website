@@ -72,7 +72,7 @@ const IntroductionSection = () => {
             <div className="consultation-cta-inline">
               <a href="#consultation" className="consultation-cta-btn">
                 <Calendar size={20} />
-                <span>Book EB-1A Consultation — $50</span>
+                <span>Book EB-1A Consultation — $69.99</span>
               </a>
             </div>
           </div>

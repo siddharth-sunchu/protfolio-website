@@ -1,4 +1,4 @@
-// Availability engine: generate candidate 30-min slots from the weekly rules,
+// Availability engine: generate candidate consultation slots from the weekly rules,
 // then subtract busy time. Source of truth for "taken" is Google free/busy plus
 // active D1 holds (and very-recent bookings, to cover free/busy propagation lag).
 

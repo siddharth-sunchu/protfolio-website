@@ -1,0 +1,14 @@
+name = "shalmalipatil-booking-email"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+workers_dev = false
+
+[vars]
+OWNER_EMAIL = "shalupatil15@gmail.com"
+SENDER_EMAIL = "bookings@mail.property-folio.com"
+SENDER_NAME = "Shalmali Patil Bookings"
+
+[[send_email]]
+name = "EMAIL"
+destination_address = "shalupatil15@gmail.com"
+allowed_sender_addresses = ["bookings@mail.property-folio.com"]

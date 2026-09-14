@@ -20,7 +20,14 @@ binding = "DB"
 database_name = "shalmali-bookings"
 database_id = "97ea2a66-9c37-4f5f-871b-07416b36120a"
 
+# Private Worker used for owner-only booking notifications. Google Calendar
+# remains the source of the customer's actual invite and Meet link.
+[[services]]
+binding = "BOOKING_EMAIL"
+service = "shalmalipatil-booking-email"
+
 # Public (non-secret) vars. Secrets (GOOGLE_CLIENT_SECRET, STRIPE_SECRET_KEY,
 # STRIPE_WEBHOOK_SECRET, ADMIN_SETUP_TOKEN) are set via `wrangler pages secret put`.
 [vars]
 GOOGLE_CLIENT_ID = "171305717290-l2jc1quuh1keccaosiqd778o3ummqbbu.apps.googleusercontent.com"
+STRIPE_PRICE_ID = "price_1UFQWoPF32qFecNy9H8PPcQP"

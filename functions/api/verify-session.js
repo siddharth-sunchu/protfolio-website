@@ -12,7 +12,8 @@
 export async function onRequestGet(context) {
   const { request, env } = context;
 
-  if (!env.STRIPE_SECRET_KEY) {
+  const stripeSecretKey = env.STRIPE_SECRET_KEY || env.STRIPE_TEST_SECRET_KEY;
+  if (!stripeSecretKey) {
     return json({ paid: false, error: 'Payments are not configured.' }, 500);
   }
 
@@ -27,8 +28,8 @@ export async function onRequestGet(context) {
       `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`,
       {
         headers: {
-          Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
-          'Stripe-Version': '2023-10-16',
+          Authorization: `Bearer ${stripeSecretKey}`,
+          'Stripe-Version': '2025-09-30.clover',
         },
       },
     );

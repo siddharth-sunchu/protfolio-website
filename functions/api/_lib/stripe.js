@@ -1,12 +1,21 @@
 // Stripe helpers (REST via fetch — no SDK, Workers-native). Includes manual
 // webhook signature verification using Web Crypto.
 
-import { CONSULTATION, STRIPE_API_VERSION } from './config.js';
+import { CHECKOUT_BRANDING, CONSULTATION, STRIPE_API_VERSION } from './config.js';
 
 const STRIPE_BASE = 'https://api.stripe.com/v1';
 
+export function stripeSecretKey(env) {
+  return env.STRIPE_SECRET_KEY || env.STRIPE_TEST_SECRET_KEY || '';
+}
+
 function authHeaders(env) {
-  return { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, 'Stripe-Version': STRIPE_API_VERSION };
+  return { Authorization: `Bearer ${stripeSecretKey(env)}`, 'Stripe-Version': STRIPE_API_VERSION };
+}
+
+function configuredPriceId(env) {
+  const isTestMode = stripeSecretKey(env).startsWith('sk_test_');
+  return isTestMode ? (env.STRIPE_TEST_PRICE_ID || '') : (env.STRIPE_PRICE_ID || '');
 }
 
 export async function createCheckoutSession(env, {
@@ -18,16 +27,29 @@ export async function createCheckoutSession(env, {
   body.set('cancel_url', cancelUrl);
   body.set('allow_promotion_codes', 'true');
   body.set('expires_at', String(expiresAtUnix));
+  // This account is also used by Visa Jump. Override the hosted Checkout
+  // identity per session so consultation customers see Shalmali's brand.
+  body.set('branding_settings[display_name]', CHECKOUT_BRANDING.displayName);
+  body.set('branding_settings[logo][type]', 'url');
+  body.set('branding_settings[logo][url]', CHECKOUT_BRANDING.logoUrl);
   if (email) body.set('customer_email', email);
   body.set('line_items[0][quantity]', '1');
-  body.set('line_items[0][price_data][currency]', CONSULTATION.currency);
-  body.set('line_items[0][price_data][unit_amount]', String(CONSULTATION.priceCents));
-  body.set('line_items[0][price_data][product_data][name]', CONSULTATION.productName);
+  const priceId = configuredPriceId(env);
+  if (priceId) {
+    body.set('line_items[0][price]', priceId);
+  } else {
+    // Test/local fallback. Production uses the saved, site-specific Stripe Price.
+    body.set('line_items[0][price_data][currency]', CONSULTATION.currency);
+    body.set('line_items[0][price_data][unit_amount]', String(CONSULTATION.priceCents));
+    body.set('line_items[0][price_data][product_data][name]', CONSULTATION.productName);
+  }
   // Slot + contact data ride along as metadata so the webhook can finalize the booking.
   body.set('metadata[slot_start]', slotStartISO);
   body.set('metadata[first_name]', firstName || '');
   body.set('metadata[last_name]', lastName || '');
   body.set('metadata[phone]', phone || '');
+  body.set('metadata[site]', 'shalmalipatil.com');
+  body.set('metadata[duration_minutes]', String(CONSULTATION.slotMinutes));
 
   const res = await fetch(`${STRIPE_BASE}/checkout/sessions`, {
     method: 'POST',

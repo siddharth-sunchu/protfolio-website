@@ -79,11 +79,22 @@ export async function createCalendarEvent(accessToken, {
     description,
     start: { dateTime: startISO, timeZone },
     end: { dateTime: endISO, timeZone },
-    attendees: attendees || [],
+    attendees: (attendees || []).map((attendee) => ({
+      ...attendee,
+      responseStatus: attendee.responseStatus || 'needsAction',
+    })),
+    guestsCanInviteOthers: false,
+    guestsCanModify: false,
     conferenceData: {
       createRequest: { requestId: crypto.randomUUID(), conferenceSolutionKey: { type: 'hangoutsMeet' } },
     },
-    reminders: { useDefault: true },
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 24 * 60 },
+        { method: 'popup', minutes: 30 },
+      ],
+    },
   };
   const url = `${CAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`;
   const res = await fetch(url, {

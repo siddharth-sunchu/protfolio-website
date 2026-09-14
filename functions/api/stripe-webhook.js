@@ -1,6 +1,6 @@
 // POST /api/stripe-webhook — the authoritative confirmation path.
-// checkout.session.completed -> finalize (create calendar event + Meet + invite).
-// checkout.session.expired   -> release the unpaid hold so the slot reopens.
+// checkout.session.completed/async_payment_succeeded -> finalize the booking.
+// checkout.session.expired                            -> release the unpaid hold.
 
 import { verifyWebhook } from './_lib/stripe.js';
 import { finalizePaidSession } from './_lib/finalize.js';
@@ -18,7 +18,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   try {
-    if (event.type === 'checkout.session.completed') {
+    if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
       const session = event.data.object;
       if (session.payment_status === 'paid') await finalizePaidSession(env, session);
     } else if (event.type === 'checkout.session.expired') {

@@ -88,7 +88,7 @@ const PortfolioWebsite = () => {
       {/* Floating CTA */}
       <a href="#booking" className={`floating-cta ${scrolled ? 'visible' : ''}`}>
         <ArrowRight size={16} />
-        <span>Book Now — $50</span>
+        <span>Book Now — $69.99</span>
       </a>
 
       {/* Scroll to top */}

@@ -5,6 +5,7 @@
 import { CONSULTATION } from './config.js';
 import { getAccessToken, createCalendarEvent } from './google.js';
 import { getConfig, getReservationBySession } from './reservations.js';
+import { notifyOwnerOfBooking } from './notifications.js';
 
 async function createEventForReservation(env, reservation, session) {
   const db = env.DB;
@@ -22,7 +23,7 @@ async function createEventForReservation(env, reservation, session) {
     `EB-1A consultation with ${fullName}.\n` +
     `Email: ${email || 'n/a'}\nPhone: ${phone || 'n/a'}\n\nBooked via shalmalipatil.com.`;
 
-  const { eventId, meetLink } = await createCalendarEvent(accessToken, {
+  const { eventId, meetLink, htmlLink } = await createCalendarEvent(accessToken, {
     startISO: startDate.toISOString(),
     endISO: endDate.toISOString(),
     summary: `EB-1A Consultation — ${fullName}`,
@@ -47,6 +48,24 @@ async function createEventForReservation(env, reservation, session) {
       session.id,
     )
     .run();
+
+  try {
+    await notifyOwnerOfBooking(env, {
+      eventId,
+      calendarLink: htmlLink,
+      meetLink,
+      slotStartISO: startDate.toISOString(),
+      slotEndISO: endDate.toISOString(),
+      timeZone: CONSULTATION.timeZone,
+      customer: { fullName, email, phone },
+      amountTotal: session.amount_total ?? CONSULTATION.priceCents,
+      currency: session.currency || CONSULTATION.currency,
+    });
+  } catch (error) {
+    // A notification outage must never turn a paid, calendar-confirmed booking
+    // into a failed booking. Google has already sent the customer's invite.
+    console.error('Owner booking notification failed', error);
+  }
   return { eventId, meetLink };
 }
 

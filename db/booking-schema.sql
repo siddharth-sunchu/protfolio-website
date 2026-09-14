@@ -5,7 +5,7 @@
 -- on demand from working-hours config minus Google Calendar free/busy minus the
 -- rows in this table. We only persist a row when a visitor RESERVES a slot.
 --
--- `slot_start` (UTC) is the natural lock: a 30-min slot can be 'held' (pending
+-- `slot_start` (UTC) is the natural lock: a consultation slot can be 'held' (pending
 -- payment, with an expiry) or 'booked' (paid + calendar event created). Holds
 -- that pass expires_at are treated as free and may be overwritten.
 --

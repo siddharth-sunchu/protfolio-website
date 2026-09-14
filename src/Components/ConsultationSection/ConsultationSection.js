@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import './ConsultationSection.css';
 
-const CONSULTATION_FEE = 50;
+const CONSULTATION_FEE = 69.99;
 
 const eb1aCriteria = [
   { icon: <Award size={20} />, title: 'Awards & Prizes', desc: 'Nationally or internationally recognized awards for excellence' },
@@ -195,7 +195,7 @@ const ConsultationSection = () => {
         </h3>
 
         <div className="booking-meta">
-          <span><Clock size={16} /> 30 minutes</span>
+          <span><Clock size={16} /> 60 minutes</span>
           <span><Video size={16} /> Google Meet</span>
           <span><CreditCard size={16} /> ${CONSULTATION_FEE} · paid to confirm</span>
         </div>
@@ -294,13 +294,13 @@ const ConsultationSection = () => {
 
                     <div className="payment-summary">
                       <div className="summary-row">
-                        <span>EB-1A Consultation (30 Min)</span>
-                        <span className="price">${CONSULTATION_FEE}.00</span>
+                        <span>EB-1A Consultation (60 Min)</span>
+                        <span className="price">${CONSULTATION_FEE}</span>
                       </div>
                       <div className="summary-divider" />
                       <div className="summary-row total">
                         <span>Total</span>
-                        <span className="price">${CONSULTATION_FEE}.00</span>
+                        <span className="price">${CONSULTATION_FEE}</span>
                       </div>
                     </div>
 
@@ -334,7 +334,7 @@ const ConsultationSection = () => {
               <CheckCircle size={56} className="confirmation-icon" />
               <h4>You're booked! 🎉</h4>
               <p className="confirmation-main-text">
-                Your 30-minute EB-1A consultation is confirmed for{' '}
+                Your 60-minute EB-1A consultation is confirmed for{' '}
                 <strong>{confirmation.slotStart ? fmtFull(confirmation.slotStart) : 'your selected time'}</strong>.
                 A Google Calendar invite with your Meet link is on its way to your inbox.
               </p>

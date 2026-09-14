@@ -1,4 +1,4 @@
-// GET /api/availability — open 30-min slots (ISO UTC) for the booking window.
+// GET /api/availability — open consultation slots (ISO UTC) for the booking window.
 // Availability = weekly rules − Google free/busy − active D1 holds/recent bookings.
 
 import { CONSULTATION } from './_lib/config.js';

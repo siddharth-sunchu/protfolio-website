@@ -1,5 +1,5 @@
 // POST /api/hold — body { slotStart, firstName, lastName, email, phone }.
-// Atomically holds the slot, creates a Stripe Checkout Session (30-min expiry),
+// Atomically holds the slot, creates a Stripe Checkout Session (30-min hold expiry),
 // and returns its URL. The hold is keyed to the session so the webhook can finalize.
 
 import { CONSULTATION } from './_lib/config.js';
@@ -10,7 +10,9 @@ import { createCheckoutSession } from './_lib/stripe.js';
 
 export async function onRequestPost({ request, env }) {
   try {
-    if (!env.STRIPE_SECRET_KEY) return json({ error: 'Payments are not configured.' }, 500);
+    if (!env.STRIPE_SECRET_KEY && !env.STRIPE_TEST_SECRET_KEY) {
+      return json({ error: 'Payments are not configured.' }, 500);
+    }
 
     const body = await request.json().catch(() => ({}));
     const { slotStart, firstName, lastName, email, phone } = body;
