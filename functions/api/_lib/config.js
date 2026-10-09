@@ -23,6 +23,13 @@ export const WEEKLY_AVAILABILITY = {
   5: [['17:00', '18:00']], // Fri 5–6pm (one slot)
 };
 
+// Days with no consultations at all (travel, holidays), as inclusive
+// ['YYYY-MM-DD', 'YYYY-MM-DD'] ranges of the owner's local calendar dates.
+// Enforced server-side, so it holds even if Google free/busy is unreachable.
+export const BLACKOUT_DATES = [
+  ['2026-10-15', '2026-11-16'], // India trip (DFW out Oct 15, back Nov 16)
+];
+
 // Per-session Checkout branding became available in this stable API version.
 export const STRIPE_API_VERSION = '2025-09-30.clover';
 

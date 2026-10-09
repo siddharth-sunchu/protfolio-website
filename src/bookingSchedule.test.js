@@ -4,7 +4,7 @@ import {
   STRIPE_API_VERSION,
   WEEKLY_AVAILABILITY,
 } from '../functions/api/_lib/config';
-import { generateCandidateSlots, filterFreeSlots } from '../functions/api/_lib/availability';
+import { generateCandidateSlots, filterFreeSlots, isSlotBookable } from '../functions/api/_lib/availability';
 import { createCheckoutSession } from '../functions/api/_lib/stripe';
 import bookingEmailWorker from '../workers/booking-email/src/index';
 
@@ -68,6 +68,19 @@ describe('consultation schedule', () => {
       end: new Date('2026-09-15T22:30:00.000Z').getTime(),
     }];
     expect(filterFreeSlots([candidate], overlappingBusyTime, new Set())).toEqual([]);
+  });
+
+  test('offers nothing during the Oct 15 – Nov 16, 2026 India trip', () => {
+    const candidates = generateCandidateSlots(new Date('2026-10-08T12:00:00.000Z'));
+    const stamps = candidates.map(localStamp);
+
+    expect(stamps.filter((stamp) => stamp >= '2026-10-15' && stamp < '2026-11-17')).toEqual([]);
+    expect(stamps).toContain('2026-10-14 Wed 18:00'); // last slot before leaving
+    expect(stamps).toContain('2026-11-17 Tue 16:00'); // first slot after returning
+
+    // /api/hold re-validates against the same candidates, so a trip slot can't be held.
+    const tripSlot = new Date('2026-10-21T21:00:00.000Z'); // Wed Oct 21, 4 PM Central
+    expect(isSlotBookable(tripSlot, candidates, [], new Set())).toBe(false);
   });
 });
 

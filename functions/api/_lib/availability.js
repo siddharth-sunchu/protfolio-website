@@ -2,13 +2,19 @@
 // then subtract busy time. Source of truth for "taken" is Google free/busy plus
 // active D1 holds (and very-recent bookings, to cover free/busy propagation lag).
 
-import { CONSULTATION, WEEKLY_AVAILABILITY } from './config.js';
+import { CONSULTATION, WEEKLY_AVAILABILITY, BLACKOUT_DATES } from './config.js';
 import { zonedWallTimeToUtc, ymdInTz } from './dates.js';
 
 const SLOT_MS = CONSULTATION.slotMinutes * 60_000;
 
+// True if a local date ('YYYY-MM-DD') falls inside any BLACKOUT_DATES range.
+// Zero-padded ISO dates compare correctly as strings.
+export function isBlackedOut(dateKey, ranges = BLACKOUT_DATES) {
+  return ranges.some(([from, to]) => dateKey >= from && dateKey <= to);
+}
+
 // Candidate slot start instants (UTC Date[]) for the booking window, honoring
-// weekly windows + min-notice + max-days-ahead. De-duplicated.
+// weekly windows + blackout dates + min-notice + max-days-ahead. De-duplicated.
 export function generateCandidateSlots(now = new Date()) {
   const tz = CONSULTATION.timeZone;
   const minStart = now.getTime() + CONSULTATION.minNoticeHours * 3_600_000;
@@ -19,6 +25,8 @@ export function generateCandidateSlots(now = new Date()) {
   for (let d = 0; d <= CONSULTATION.maxDaysAhead + 1; d++) {
     const dayInstant = new Date(now.getTime() + d * 86_400_000);
     const { year, month, day, weekday } = ymdInTz(dayInstant, tz);
+    const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (isBlackedOut(dateKey)) continue;
     const windows = WEEKLY_AVAILABILITY[weekday] || [];
     for (const [start, end] of windows) {
       const [sh, sm] = start.split(':').map(Number);
